@@ -2,7 +2,7 @@
   {
     "mapping_name": "CUST_DIM_LOAD",
     "source_table": "CUSTOMER_SRC",
-    "source_schema": null,
+    "source_schema": "ORACLE",
     "source_column": "CUSTOMER_ID",
     "source_datatype": "number",
     "source_length": null,
@@ -39,7 +39,7 @@
   {
     "mapping_name": "CUST_DIM_LOAD",
     "source_table": "CUSTOMER_SRC",
-    "source_schema": null,
+    "source_schema": "ORACLE",
     "source_column": "CUSTOMER_NAME",
     "source_datatype": "string",
     "source_length": null,

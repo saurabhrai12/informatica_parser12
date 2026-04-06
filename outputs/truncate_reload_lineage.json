@@ -2,14 +2,17 @@
   {
     "mapping_name": "PRODUCT_DIM_RELOAD",
     "source_table": "PRODUCTS_SRC",
-    "source_schema": null,
+    "source_schema": "ORACLE",
     "source_column": "PRODUCT_ID",
     "source_datatype": "number",
     "source_length": null,
-    "source_nullable": true,
-    "source_pk_flag": false,
+    "source_nullable": false,
+    "source_pk_flag": true,
     "source_filter": null,
-    "transformation_sequence": [],
+    "transformation_sequence": [
+      "SQ_PRODUCTS",
+      "EXPR_PRODUCT"
+    ],
     "final_expression": null,
     "pass_through": true,
     "default_value": null,
@@ -29,8 +32,8 @@
     "target_datatype": "number",
     "load_type": "INSERT",
     "update_override_sql": null,
-    "target_pk_flag": false,
-    "truncate_before_load": false,
+    "target_pk_flag": true,
+    "truncate_before_load": true,
     "reject_handling": null,
     "lineage_confidence": "HIGH",
     "ambiguity_notes": null,
@@ -39,14 +42,17 @@
   {
     "mapping_name": "PRODUCT_DIM_RELOAD",
     "source_table": "PRODUCTS_SRC",
-    "source_schema": null,
+    "source_schema": "ORACLE",
     "source_column": "PRODUCT_CD",
     "source_datatype": "varchar2",
-    "source_length": null,
-    "source_nullable": true,
+    "source_length": 20,
+    "source_nullable": false,
     "source_pk_flag": false,
     "source_filter": null,
-    "transformation_sequence": [],
+    "transformation_sequence": [
+      "SQ_PRODUCTS",
+      "EXPR_PRODUCT"
+    ],
     "final_expression": null,
     "pass_through": true,
     "default_value": null,
@@ -67,7 +73,7 @@
     "load_type": "INSERT",
     "update_override_sql": null,
     "target_pk_flag": false,
-    "truncate_before_load": false,
+    "truncate_before_load": true,
     "reject_handling": null,
     "lineage_confidence": "HIGH",
     "ambiguity_notes": null,
@@ -76,20 +82,44 @@
   {
     "mapping_name": "PRODUCT_DIM_RELOAD",
     "source_table": "PRODUCTS_SRC",
-    "source_schema": null,
+    "source_schema": "ORACLE",
     "source_column": "PRODUCT_NAME",
     "source_datatype": "varchar2",
-    "source_length": null,
+    "source_length": 200,
     "source_nullable": true,
     "source_pk_flag": false,
     "source_filter": null,
-    "transformation_sequence": [],
-    "final_expression": null,
-    "pass_through": true,
+    "transformation_sequence": [
+      "SQ_PRODUCTS",
+      "EXPR_PRODUCT"
+    ],
+    "final_expression": "UPPER(LTRIM(RTRIM(NVL(PRODUCT_NAME,'UNKNOWN'))))",
+    "pass_through": false,
     "default_value": null,
-    "null_handling": null,
+    "null_handling": "NVL",
     "type_cast": null,
-    "function_mappings": [],
+    "function_mappings": [
+      {
+        "infa_fn": "UPPER",
+        "sf_fn": "UPPER({0})",
+        "notes": null
+      },
+      {
+        "infa_fn": "LTRIM",
+        "sf_fn": "LTRIM({0})",
+        "notes": null
+      },
+      {
+        "infa_fn": "RTRIM",
+        "sf_fn": "RTRIM({0})",
+        "notes": null
+      },
+      {
+        "infa_fn": "NVL",
+        "sf_fn": "COALESCE({0}, {1})",
+        "notes": null
+      }
+    ],
     "lookup_table": null,
     "lookup_condition": null,
     "aggregation_logic": null,
@@ -104,29 +134,38 @@
     "load_type": "INSERT",
     "update_override_sql": null,
     "target_pk_flag": false,
-    "truncate_before_load": false,
+    "truncate_before_load": true,
     "reject_handling": null,
     "lineage_confidence": "HIGH",
     "ambiguity_notes": null,
-    "migration_complexity": "SIMPLE"
+    "migration_complexity": "MODERATE"
   },
   {
     "mapping_name": "PRODUCT_DIM_RELOAD",
     "source_table": "PRODUCTS_SRC",
-    "source_schema": null,
+    "source_schema": "ORACLE",
     "source_column": "CATEGORY_CD",
     "source_datatype": "varchar2",
-    "source_length": null,
+    "source_length": 10,
     "source_nullable": true,
     "source_pk_flag": false,
     "source_filter": null,
-    "transformation_sequence": [],
-    "final_expression": null,
-    "pass_through": true,
+    "transformation_sequence": [
+      "SQ_PRODUCTS",
+      "EXPR_PRODUCT"
+    ],
+    "final_expression": "NVL(CATEGORY_CD,'MISC')",
+    "pass_through": false,
     "default_value": null,
-    "null_handling": null,
+    "null_handling": "NVL",
     "type_cast": null,
-    "function_mappings": [],
+    "function_mappings": [
+      {
+        "infa_fn": "NVL",
+        "sf_fn": "COALESCE({0}, {1})",
+        "notes": null
+      }
+    ],
     "lookup_table": null,
     "lookup_condition": null,
     "aggregation_logic": null,
@@ -141,29 +180,38 @@
     "load_type": "INSERT",
     "update_override_sql": null,
     "target_pk_flag": false,
-    "truncate_before_load": false,
+    "truncate_before_load": true,
     "reject_handling": null,
     "lineage_confidence": "HIGH",
     "ambiguity_notes": null,
-    "migration_complexity": "SIMPLE"
+    "migration_complexity": "MODERATE"
   },
   {
     "mapping_name": "PRODUCT_DIM_RELOAD",
     "source_table": "PRODUCTS_SRC",
-    "source_schema": null,
+    "source_schema": "ORACLE",
     "source_column": "SUB_CAT_CD",
     "source_datatype": "varchar2",
-    "source_length": null,
+    "source_length": 10,
     "source_nullable": true,
     "source_pk_flag": false,
     "source_filter": null,
-    "transformation_sequence": [],
-    "final_expression": null,
-    "pass_through": true,
+    "transformation_sequence": [
+      "SQ_PRODUCTS",
+      "EXPR_PRODUCT"
+    ],
+    "final_expression": "NVL(SUB_CAT_CD,'NA')",
+    "pass_through": false,
     "default_value": null,
-    "null_handling": null,
+    "null_handling": "NVL",
     "type_cast": null,
-    "function_mappings": [],
+    "function_mappings": [
+      {
+        "infa_fn": "NVL",
+        "sf_fn": "COALESCE({0}, {1})",
+        "notes": null
+      }
+    ],
     "lookup_table": null,
     "lookup_condition": null,
     "aggregation_logic": null,
@@ -178,29 +226,38 @@
     "load_type": "INSERT",
     "update_override_sql": null,
     "target_pk_flag": false,
-    "truncate_before_load": false,
+    "truncate_before_load": true,
     "reject_handling": null,
     "lineage_confidence": "HIGH",
     "ambiguity_notes": null,
-    "migration_complexity": "SIMPLE"
+    "migration_complexity": "MODERATE"
   },
   {
     "mapping_name": "PRODUCT_DIM_RELOAD",
     "source_table": "PRODUCTS_SRC",
-    "source_schema": null,
+    "source_schema": "ORACLE",
     "source_column": "UNIT_PRICE",
     "source_datatype": "number",
     "source_length": null,
     "source_nullable": true,
     "source_pk_flag": false,
     "source_filter": null,
-    "transformation_sequence": [],
-    "final_expression": null,
-    "pass_through": true,
+    "transformation_sequence": [
+      "SQ_PRODUCTS",
+      "EXPR_PRODUCT"
+    ],
+    "final_expression": "NVL(UNIT_PRICE,0)",
+    "pass_through": false,
     "default_value": null,
-    "null_handling": null,
+    "null_handling": "NVL",
     "type_cast": null,
-    "function_mappings": [],
+    "function_mappings": [
+      {
+        "infa_fn": "NVL",
+        "sf_fn": "COALESCE({0}, {1})",
+        "notes": null
+      }
+    ],
     "lookup_table": null,
     "lookup_condition": null,
     "aggregation_logic": null,
@@ -215,29 +272,38 @@
     "load_type": "INSERT",
     "update_override_sql": null,
     "target_pk_flag": false,
-    "truncate_before_load": false,
+    "truncate_before_load": true,
     "reject_handling": null,
     "lineage_confidence": "HIGH",
     "ambiguity_notes": null,
-    "migration_complexity": "SIMPLE"
+    "migration_complexity": "MODERATE"
   },
   {
     "mapping_name": "PRODUCT_DIM_RELOAD",
     "source_table": "PRODUCTS_SRC",
-    "source_schema": null,
+    "source_schema": "ORACLE",
     "source_column": "ACTIVE_FLG",
     "source_datatype": "varchar2",
-    "source_length": null,
+    "source_length": 1,
     "source_nullable": true,
     "source_pk_flag": false,
     "source_filter": null,
-    "transformation_sequence": [],
-    "final_expression": null,
-    "pass_through": true,
+    "transformation_sequence": [
+      "SQ_PRODUCTS",
+      "EXPR_PRODUCT"
+    ],
+    "final_expression": "NVL(ACTIVE_FLG,'N')",
+    "pass_through": false,
     "default_value": null,
-    "null_handling": null,
+    "null_handling": "NVL",
     "type_cast": null,
-    "function_mappings": [],
+    "function_mappings": [
+      {
+        "infa_fn": "NVL",
+        "sf_fn": "COALESCE({0}, {1})",
+        "notes": null
+      }
+    ],
     "lookup_table": null,
     "lookup_condition": null,
     "aggregation_logic": null,
@@ -252,29 +318,43 @@
     "load_type": "INSERT",
     "update_override_sql": null,
     "target_pk_flag": false,
-    "truncate_before_load": false,
+    "truncate_before_load": true,
     "reject_handling": null,
     "lineage_confidence": "HIGH",
     "ambiguity_notes": null,
-    "migration_complexity": "SIMPLE"
+    "migration_complexity": "MODERATE"
   },
   {
     "mapping_name": "PRODUCT_DIM_RELOAD",
     "source_table": "PRODUCTS_SRC",
-    "source_schema": null,
+    "source_schema": "ORACLE",
     "source_column": "EFF_DT",
     "source_datatype": "date",
     "source_length": null,
     "source_nullable": true,
     "source_pk_flag": false,
     "source_filter": null,
-    "transformation_sequence": [],
-    "final_expression": null,
-    "pass_through": true,
+    "transformation_sequence": [
+      "SQ_PRODUCTS",
+      "EXPR_PRODUCT"
+    ],
+    "final_expression": "NVL(EFF_DT,TO_DATE('19000101','YYYYMMDD'))",
+    "pass_through": false,
     "default_value": null,
-    "null_handling": null,
-    "type_cast": null,
-    "function_mappings": [],
+    "null_handling": "NVL",
+    "type_cast": "TO_DATE",
+    "function_mappings": [
+      {
+        "infa_fn": "NVL",
+        "sf_fn": "COALESCE({0}, {1})",
+        "notes": null
+      },
+      {
+        "infa_fn": "TO_DATE",
+        "sf_fn": "TO_DATE({0}, {1})",
+        "notes": null
+      }
+    ],
     "lookup_table": null,
     "lookup_condition": null,
     "aggregation_logic": null,
@@ -289,29 +369,43 @@
     "load_type": "INSERT",
     "update_override_sql": null,
     "target_pk_flag": false,
-    "truncate_before_load": false,
+    "truncate_before_load": true,
     "reject_handling": null,
     "lineage_confidence": "HIGH",
     "ambiguity_notes": null,
-    "migration_complexity": "SIMPLE"
+    "migration_complexity": "MODERATE"
   },
   {
     "mapping_name": "PRODUCT_DIM_RELOAD",
     "source_table": "PRODUCTS_SRC",
-    "source_schema": null,
+    "source_schema": "ORACLE",
     "source_column": "EXP_DT",
     "source_datatype": "date",
     "source_length": null,
     "source_nullable": true,
     "source_pk_flag": false,
     "source_filter": null,
-    "transformation_sequence": [],
-    "final_expression": null,
-    "pass_through": true,
+    "transformation_sequence": [
+      "SQ_PRODUCTS",
+      "EXPR_PRODUCT"
+    ],
+    "final_expression": "NVL(EXP_DT,TO_DATE('99991231','YYYYMMDD'))",
+    "pass_through": false,
     "default_value": null,
-    "null_handling": null,
-    "type_cast": null,
-    "function_mappings": [],
+    "null_handling": "NVL",
+    "type_cast": "TO_DATE",
+    "function_mappings": [
+      {
+        "infa_fn": "NVL",
+        "sf_fn": "COALESCE({0}, {1})",
+        "notes": null
+      },
+      {
+        "infa_fn": "TO_DATE",
+        "sf_fn": "TO_DATE({0}, {1})",
+        "notes": null
+      }
+    ],
     "lookup_table": null,
     "lookup_condition": null,
     "aggregation_logic": null,
@@ -326,11 +420,11 @@
     "load_type": "INSERT",
     "update_override_sql": null,
     "target_pk_flag": false,
-    "truncate_before_load": false,
+    "truncate_before_load": true,
     "reject_handling": null,
     "lineage_confidence": "HIGH",
     "ambiguity_notes": null,
-    "migration_complexity": "SIMPLE"
+    "migration_complexity": "MODERATE"
   },
   {
     "mapping_name": "PRODUCT_DIM_RELOAD",
@@ -342,8 +436,10 @@
     "source_nullable": true,
     "source_pk_flag": false,
     "source_filter": null,
-    "transformation_sequence": [],
-    "final_expression": null,
+    "transformation_sequence": [
+      "EXPR_PRODUCT"
+    ],
+    "final_expression": "SYSDATE",
     "pass_through": false,
     "default_value": null,
     "null_handling": null,
@@ -363,7 +459,7 @@
     "load_type": "INSERT",
     "update_override_sql": null,
     "target_pk_flag": false,
-    "truncate_before_load": false,
+    "truncate_before_load": true,
     "reject_handling": null,
     "lineage_confidence": "MEDIUM",
     "ambiguity_notes": null,
