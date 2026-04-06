@@ -1,0 +1,305 @@
+{
+  "mappings": [
+    {
+      "oracle_table": "CUSTOMER_DIM", "oracle_column": "CUST_ID",
+      "snowflake_table": "CUSTOMER_DIM", "snowflake_column": "CUSTOMER_ID",
+      "match_type": "ABBREVIATION", "confidence_score": 0.93, "confidence_tier": "HIGH",
+      "match_basis": "CUST→CUSTOMER abbreviation expansion; both NUMBER PK; comment confirms customer identifier",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "NUMBER(10,0) → NUMBER(38,0); direct pass-through",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "CUSTOMER_DIM", "oracle_column": "CUST_NAME",
+      "snowflake_table": "CUSTOMER_DIM", "snowflake_column": "CUSTOMER_NAME",
+      "match_type": "ABBREVIATION", "confidence_score": 0.93, "confidence_tier": "HIGH",
+      "match_basis": "CUST→CUSTOMER abbreviation; NAME exact suffix; VARCHAR2→VARCHAR compatible",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(100) → VARCHAR(100); UPPER(LTRIM(RTRIM(CUST_NAME))) from Informatica EXPR",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "CUSTOMER_DIM", "oracle_column": "EMAIL_ADDR",
+      "snowflake_table": "CUSTOMER_DIM", "snowflake_column": "EMAIL_ADDRESS",
+      "match_type": "ABBREVIATION", "confidence_score": 0.91, "confidence_tier": "HIGH",
+      "match_basis": "ADDR→ADDRESS abbreviation expansion; EMAIL prefix exact; comment match",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(200) → VARCHAR(200); LOWER(NVL(EMAIL_ADDR,'NO_EMAIL')) from Informatica",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "CUSTOMER_DIM", "oracle_column": "PHONE_NO",
+      "snowflake_table": "CUSTOMER_DIM", "snowflake_column": "PHONE_NUMBER",
+      "match_type": "ABBREVIATION", "confidence_score": 0.90, "confidence_tier": "HIGH",
+      "match_basis": "NO→NUMBER abbreviation; PHONE prefix exact; both VARCHAR nullable",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(20) → VARCHAR(20); LTRIM(RTRIM(NVL(PHONE_NO,'N/A')))",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "CUSTOMER_DIM", "oracle_column": "SEGMENT_CD",
+      "snowflake_table": "CUSTOMER_DIM", "snowflake_column": "SEGMENT_CODE",
+      "match_type": "ABBREVIATION", "confidence_score": 0.92, "confidence_tier": "HIGH",
+      "match_basis": "CD→CODE abbreviation; SEGMENT prefix exact; same length VARCHAR(5)",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(5) → VARCHAR(5); NVL(SEGMENT_CD,'GEN') default",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "CUSTOMER_DIM", "oracle_column": "KYC_STATUS",
+      "snowflake_table": "CUSTOMER_DIM", "snowflake_column": "KYC_STATUS",
+      "match_type": "EXACT", "confidence_score": 1.0, "confidence_tier": "HIGH",
+      "match_basis": "Exact name match; both VARCHAR; business concept identical",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(10) → VARCHAR(10); direct pass-through",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "CUSTOMER_DIM", "oracle_column": "CRT_DT",
+      "snowflake_table": "CUSTOMER_DIM", "snowflake_column": "CREATED_DATE",
+      "match_type": "SEMANTIC", "confidence_score": 0.88, "confidence_tier": "MEDIUM",
+      "match_basis": "CRT→CREATED + DT→DATE abbreviation chain; synonym set {CREATED_DATE, CRT_DT, CREATE_DT}; Oracle DATE→TIMESTAMP_NTZ",
+      "type_compatible": true, "suggested_cast": "TRY_TO_TIMESTAMP_NTZ(col)",
+      "transform_hint": "Oracle DATE includes time component; cast to TIMESTAMP_NTZ(0)",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "CUSTOMER_DIM", "oracle_column": "LAST_UPD_DT",
+      "snowflake_table": "CUSTOMER_DIM", "snowflake_column": "LAST_UPDATED_DT",
+      "match_type": "ABBREVIATION", "confidence_score": 0.91, "confidence_tier": "HIGH",
+      "match_basis": "UPD→UPDATED abbreviation; LAST_ prefix exact; DT suffix exact; synonym set match",
+      "type_compatible": true, "suggested_cast": "TRY_TO_TIMESTAMP_NTZ(col)",
+      "transform_hint": "Oracle DATE → TIMESTAMP_NTZ; watermark column for incremental loads",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "CUSTOMER_DIM", "oracle_column": "ACTIVE_FLG",
+      "snowflake_table": "CUSTOMER_DIM", "snowflake_column": "IS_ACTIVE",
+      "match_type": "SEMANTIC", "confidence_score": 0.78, "confidence_tier": "MEDIUM",
+      "match_basis": "FLG→FLAG; ACTIVE exact; IS_ prefix is Snowflake convention for boolean flags; both Y/N enums",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "NVL(ACTIVE_FLG,'N'); Y/N enum — consider BOOLEAN cast in Snowflake",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "CUSTOMER_DIM", "oracle_column": "CNTRY_CD",
+      "snowflake_table": "CUSTOMER_DIM", "snowflake_column": "COUNTRY_CODE",
+      "match_type": "ABBREVIATION", "confidence_score": 0.90, "confidence_tier": "HIGH",
+      "match_basis": "CNTRY→COUNTRY + CD→CODE abbreviation; both CHAR(3) ISO code; comment confirms",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(3) → VARCHAR(3); direct pass-through",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "CUSTOMER_DIM", "oracle_column": "RISK_BAND",
+      "snowflake_table": "CUSTOMER_DIM", "snowflake_column": "RISK_BAND",
+      "match_type": "EXACT", "confidence_score": 1.0, "confidence_tier": "HIGH",
+      "match_basis": "Exact name match; both VARCHAR; same domain values LOW/MED/HIGH",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(10) → VARCHAR(10); direct pass-through",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "TXN_FACT", "oracle_column": "TXN_ID",
+      "snowflake_table": "TXN_FACT", "snowflake_column": "TRANSACTION_ID",
+      "match_type": "ABBREVIATION", "confidence_score": 0.93, "confidence_tier": "HIGH",
+      "match_basis": "TXN→TRANSACTION abbreviation; ID suffix exact; both NUMBER PK",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "NUMBER(18,0) → NUMBER(38,0); PK — check sequence generator",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "TXN_FACT", "oracle_column": "ACCT_ID",
+      "snowflake_table": "TXN_FACT", "snowflake_column": "ACCOUNT_ID",
+      "match_type": "ABBREVIATION", "confidence_score": 0.92, "confidence_tier": "HIGH",
+      "match_basis": "ACCT→ACCOUNT abbreviation; ID suffix exact; both NUMBER FK",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "NUMBER(10,0) → NUMBER(38,0); FK to ACCOUNT table",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "TXN_FACT", "oracle_column": "CUST_ID",
+      "snowflake_table": "TXN_FACT", "snowflake_column": "CUSTOMER_ID",
+      "match_type": "ABBREVIATION", "confidence_score": 0.93, "confidence_tier": "HIGH",
+      "match_basis": "CUST→CUSTOMER abbreviation; ID suffix exact; both NUMBER FK",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "NUMBER(10,0) → NUMBER(38,0); FK to CUSTOMER_DIM",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "TXN_FACT", "oracle_column": "TXN_AMT",
+      "snowflake_table": "TXN_FACT", "snowflake_column": "TXN_AMOUNT",
+      "match_type": "ABBREVIATION", "confidence_score": 0.92, "confidence_tier": "HIGH",
+      "match_basis": "TXN exact prefix; AMT→AMOUNT abbreviation; both NUMBER(18,2)",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "NVL(TXN_AMT, 0) — null guard in Informatica EXPR; same precision/scale",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "TXN_FACT", "oracle_column": "TXN_DT",
+      "snowflake_table": "TXN_FACT", "snowflake_column": "TRANSACTION_DATE",
+      "match_type": "SEMANTIC", "confidence_score": 0.87, "confidence_tier": "MEDIUM",
+      "match_basis": "TXN→TRANSACTION + DT→DATE; DATE column used as watermark; synonym set match",
+      "type_compatible": true, "suggested_cast": "TRY_TO_TIMESTAMP_NTZ(col)",
+      "transform_hint": "Oracle DATE → TIMESTAMP_NTZ(0); TRUNC(TXN_DT) used in daily agg",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "TXN_FACT", "oracle_column": "CHANNEL_CD",
+      "snowflake_table": "TXN_FACT", "snowflake_column": "CHANNEL_CODE",
+      "match_type": "ABBREVIATION", "confidence_score": 0.92, "confidence_tier": "HIGH",
+      "match_basis": "CHANNEL exact; CD→CODE abbreviation; both VARCHAR(4); same enum values WEB/MOB/ATM",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(4) → VARCHAR(4); IIF decode applied in Informatica EXPR",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "TXN_FACT", "oracle_column": "TXN_STATUS",
+      "snowflake_table": "TXN_FACT", "snowflake_column": "TXN_STATUS_DESC",
+      "match_type": "NORMALISED", "confidence_score": 0.85, "confidence_tier": "MEDIUM",
+      "match_basis": "TXN_STATUS normalised prefix match; _DESC suffix added in Snowflake for decoded description; DECODE applied in Informatica",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(10) → VARCHAR(30); DECODE(TXN_STATUS,'APPR','APPROVED','DECL','DECLINED',...) via CASE WHEN",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "TXN_FACT", "oracle_column": "MERCHANT_CD",
+      "snowflake_table": "TXN_FACT", "snowflake_column": "MERCHANT_CODE",
+      "match_type": "ABBREVIATION", "confidence_score": 0.92, "confidence_tier": "HIGH",
+      "match_basis": "MERCHANT exact; CD→CODE abbreviation; both VARCHAR(20)",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(20) → VARCHAR(20); direct pass-through",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "TXN_FACT", "oracle_column": "CNTRY_CD",
+      "snowflake_table": "TXN_FACT", "snowflake_column": "COUNTRY_CODE",
+      "match_type": "ABBREVIATION", "confidence_score": 0.90, "confidence_tier": "HIGH",
+      "match_basis": "CNTRY→COUNTRY + CD→CODE; both CHAR(3)",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(3) → VARCHAR(3); direct pass-through",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "TXN_FACT", "oracle_column": "CRT_DT",
+      "snowflake_table": "TXN_FACT", "snowflake_column": "LOAD_TS",
+      "match_type": "SEMANTIC", "confidence_score": 0.72, "confidence_tier": "MEDIUM",
+      "match_basis": "CRT_DT (creation/load date) semantically equivalent to LOAD_TS; Informatica EXPR uses SYSDATE for this field",
+      "type_compatible": true, "suggested_cast": "TRY_TO_TIMESTAMP_NTZ(col)",
+      "transform_hint": "Oracle DATE → TIMESTAMP_NTZ; SYSDATE → CURRENT_TIMESTAMP() in Snowflake proc",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "ALERT_FCT", "oracle_column": "ALERT_ID",
+      "snowflake_table": "ALERT_FCT", "snowflake_column": "ALERT_ID",
+      "match_type": "EXACT", "confidence_score": 1.0, "confidence_tier": "HIGH",
+      "match_basis": "Exact name match; both NUMBER PK",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "NUMBER(18,0) → NUMBER(38,0)",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "ALERT_FCT", "oracle_column": "CUST_ID",
+      "snowflake_table": "ALERT_FCT", "snowflake_column": "CUSTOMER_ID",
+      "match_type": "ABBREVIATION", "confidence_score": 0.93, "confidence_tier": "HIGH",
+      "match_basis": "CUST→CUSTOMER; ID exact suffix; both NUMBER FK",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "NUMBER(10,0) → NUMBER(38,0)",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "ALERT_FCT", "oracle_column": "ACCT_ID",
+      "snowflake_table": "ALERT_FCT", "snowflake_column": "ACCOUNT_ID",
+      "match_type": "ABBREVIATION", "confidence_score": 0.92, "confidence_tier": "HIGH",
+      "match_basis": "ACCT→ACCOUNT; ID exact suffix; both NUMBER FK",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "NUMBER(10,0) → NUMBER(38,0)",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "ALERT_FCT", "oracle_column": "ALERT_TYP",
+      "snowflake_table": "ALERT_FCT", "snowflake_column": "ALERT_TYPE",
+      "match_type": "ABBREVIATION", "confidence_score": 0.93, "confidence_tier": "HIGH",
+      "match_basis": "ALERT exact; TYP→TYPE abbreviation; both VARCHAR(20)",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(20) → VARCHAR(20); direct pass-through",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "ALERT_FCT", "oracle_column": "RISK_SCORE",
+      "snowflake_table": "ALERT_FCT", "snowflake_column": "RISK_SCORE",
+      "match_type": "EXACT", "confidence_score": 1.0, "confidence_tier": "HIGH",
+      "match_basis": "Exact name match; both NUMBER(5,2); same 0-100 range",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "NUMBER(5,2) → NUMBER(5,2); direct pass-through",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "ALERT_FCT", "oracle_column": "ALERT_STATUS",
+      "snowflake_table": "ALERT_FCT", "snowflake_column": "ALERT_STATUS",
+      "match_type": "EXACT", "confidence_score": 1.0, "confidence_tier": "HIGH",
+      "match_basis": "Exact name match; both VARCHAR; same OPEN/CLOSED/ESCALATED enum",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(10) → VARCHAR(10); direct pass-through",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "ALERT_FCT", "oracle_column": "ALERT_DT",
+      "snowflake_table": "ALERT_FCT", "snowflake_column": "ALERT_DATE",
+      "match_type": "ABBREVIATION", "confidence_score": 0.92, "confidence_tier": "HIGH",
+      "match_basis": "ALERT exact; DT→DATE abbreviation; both date type NOT NULL",
+      "type_compatible": true, "suggested_cast": "TRY_TO_TIMESTAMP_NTZ(col)",
+      "transform_hint": "Oracle DATE → TIMESTAMP_NTZ",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "ALERT_FCT", "oracle_column": "RESOLVED_DT",
+      "snowflake_table": "ALERT_FCT", "snowflake_column": "RESOLVED_DATE",
+      "match_type": "ABBREVIATION", "confidence_score": 0.92, "confidence_tier": "HIGH",
+      "match_basis": "RESOLVED exact; DT→DATE abbreviation; both nullable DATE",
+      "type_compatible": true, "suggested_cast": "TRY_TO_TIMESTAMP_NTZ(col)",
+      "transform_hint": "Oracle DATE → TIMESTAMP_NTZ; nullable — use TRY_TO_TIMESTAMP_NTZ",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "ALERT_FCT", "oracle_column": "SAR_FLG",
+      "snowflake_table": "ALERT_FCT", "snowflake_column": "SAR_FLAG",
+      "match_type": "ABBREVIATION", "confidence_score": 0.93, "confidence_tier": "HIGH",
+      "match_basis": "SAR exact; FLG→FLAG abbreviation; both VARCHAR(1) Y/N",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "VARCHAR2(1) → VARCHAR(1); Y/N enum",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "ALERT_FCT", "oracle_column": "ANALYST_ID",
+      "snowflake_table": "ALERT_FCT", "snowflake_column": "ANALYST_ID",
+      "match_type": "EXACT", "confidence_score": 1.0, "confidence_tier": "HIGH",
+      "match_basis": "Exact name match; both NUMBER nullable",
+      "type_compatible": true, "suggested_cast": null,
+      "transform_hint": "NUMBER(10,0) → NUMBER(38,0); direct pass-through",
+      "recommended_action": "MAP"
+    },
+    {
+      "oracle_table": "ALERT_FCT", "oracle_column": "CRT_DT",
+      "snowflake_table": "ALERT_FCT", "snowflake_column": "CREATED_DATE",
+      "match_type": "SEMANTIC", "confidence_score": 0.88, "confidence_tier": "MEDIUM",
+      "match_basis": "CRT→CREATED + DT→DATE; synonym set {CREATED_DATE, CRT_DT, CREATE_DT}",
+      "type_compatible": true, "suggested_cast": "TRY_TO_TIMESTAMP_NTZ(col)",
+      "transform_hint": "Oracle DATE → TIMESTAMP_NTZ; SYSDATE used in Informatica",
+      "recommended_action": "MAP"
+    }
+  ],
+  "unmatched_oracle": [],
+  "unmatched_snowflake": [
+    {
+      "snowflake_table": "CUSTOMER_DIM", "snowflake_column": "LOAD_TS",
+      "reason": "System-generated ETL timestamp — no Oracle source column",
+      "action": "DERIVED"
+    },
+    {
+      "snowflake_table": "TXN_FACT", "snowflake_column": "IS_HIGH_VALUE",
+      "reason": "Derived computed column (IIF TXN_AMT > 10000) — not present in Oracle source",
+      "action": "DERIVED"
+    }
+  ]
+}

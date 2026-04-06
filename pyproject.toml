@@ -1,0 +1,20 @@
+[project]
+name = "ora2sf-migration"
+version = "0.1.0"
+description = "Oracle DWH (Informatica) → Snowflake ELT migration agent"
+requires-python = ">=3.11"
+dependencies = [
+  "snowflake-snowpark-python>=1.14.0",
+  "lxml>=5.0.0",
+  "pydantic>=2.0.0",
+  "jinja2>=3.1.0",
+  "pytest>=8.0.0",
+  "pytest-cov>=4.0.0",
+  "sqlglot>=23.0.0",
+  "pyyaml>=6.0.0",
+  "rich>=13.0.0",
+]
+
+[tool.pytest.ini_options]
+markers = ["integration: requires live DB credentials"]
+testpaths = ["step1_lineage/tests", "step2_mapping/tests", "step3_procgen/tests", "step4_testing/tests"]

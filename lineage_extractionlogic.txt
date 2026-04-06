@@ -1,0 +1,141 @@
+You are an expert Informatica PowerCenter mapping analyst and data migration architect. Your task is to perform a complete, exhaustive field-level lineage extraction from the Informatica PowerCenter mapping provided in the attached XML export (.xml).
+
+The extracted lineage will be used to auto-generate migration scripts targeting Snowflake (stored procedures + tasks). Accuracy and completeness are critical — missing or incorrect lineage will cause broken migration scripts.
+
+════════════════════════════════════════════
+EXTRACTION SCOPE
+════════════════════════════════════════════
+
+Analyse EVERY mapping component — Source Qualifiers, Expressions, Filters, Lookups, Aggregators, Joiners, Routers, Sorters, Normalizers, Stored Procedures, Update Strategy — and trace each field from its origin to its final destination.
+
+SOURCE METADATA (extract for every source field):
+  1. Source table/file name
+  2. Source schema/owner
+  3. Source column name
+  4. Source data type & length
+  5. Nullable / NOT NULL
+  6. Primary key / join keys
+  7. Source filter condition
+TRANSFORMATION LOGIC (extract for every field that passes through a transformation):
+  1. Expression / formula
+  2. Transformation type
+  3. Transformation name
+  4. Execution sequence order
+  5. Lookup details & key
+  6. Aggregation / group-by logic
+  7. Joiner / join condition
+  8. Router / filter condition
+  9. Sorter / rank logic
+  10. Source qualifier SQL override
+  11. Pass-through flag
+  12. Default / hardcoded value
+  13. Null handling strategy
+  14. Type cast / conversion
+  15. Function mapping (IIF→CASE etc.)
+TARGET METADATA (extract for every target field):
+  1. Target table name
+  2. Target schema
+  3. Target column name
+  4. Target data type & length
+  5. Load type (Insert/Update/Upsert)
+  6. Update override SQL
+  7. Target primary key
+DATA QUALITY & MIGRATION HINTS (extract where applicable):
+  1. Reject / error handling
+  2. Truncate before load flag
+  3. Constraint violations to handle
+  4. Lineage confidence score
+  5. Ambiguous mappings flagged
+  6. Migration complexity notes
+  7. Snowflake-specific rewrite hint
+
+════════════════════════════════════════════
+EXPRESSION EXTRACTION RULES
+════════════════════════════════════════════
+
+1. Capture the FULL expression text verbatim from the mapping, do not simplify.
+2. For every function used, document its Informatica form AND the equivalent Snowflake (stored procedures + tasks) form (e.g., IIF → CASE WHEN, TO_DATE → TO_DATE / TRY_TO_DATE, SUBSTR → SUBSTRING).
+3. If an expression references a port from a previous transformation, include the intermediate port name and its source expression too — build the complete derivation chain.
+4. For Lookup transformations: capture the lookup table, lookup condition, return port(s), and the connected condition operator.
+5. For Aggregator transformations: capture group-by ports separately from aggregate expressions.
+6. For Router transformations: capture every group name and its filter condition, including the DEFAULT group.
+7. For Update Strategy: capture the DD_INSERT / DD_UPDATE / DD_DELETE / DD_REJECT expression in full.
+
+════════════════════════════════════════════
+AMBIGUITY & CONFIDENCE SCORING
+════════════════════════════════════════════
+
+- If a field derivation is unclear or partially documented, set confidence = LOW and include an ambiguity_notes entry explaining exactly what is missing or unclear.
+- If a field is directly passed through with no transformation, set pass_through = true and leave expression fields null.
+- If the same target column is written by multiple upstream paths (e.g., via a Router), create a separate lineage row for each path and label them clearly.
+
+════════════════════════════════════════════
+OUTPUT FORMAT
+════════════════════════════════════════════
+
+Return the lineage as a JSON array. Each element represents one source-to-target field mapping and must include every extracted attribute as keys. Use null for any attribute that cannot be determined. Example skeleton:
+
+[
+  {
+    "mapping_name": "<Informatica mapping name>",
+    "source_table": "...",
+    "source_schema": "...",
+    "source_column": "...",
+    "source_datatype": "...",
+    "source_length": ...,
+    "source_nullable": true,
+    "source_pk_flag": false,
+    "source_filter": "...",
+    "transformation_sequence": [...],
+    "final_expression": "...",
+    "pass_through": false,
+    "default_value": null,
+    "null_handling": "...",
+    "type_cast": "...",
+    "function_mappings": [...],
+    "lookup_table": null,
+    "lookup_condition": null,
+    "aggregation_logic": null,
+    "join_condition": null,
+    "router_condition": null,
+    "sorter_logic": null,
+    "sq_override_sql": null,
+    "target_table": "...",
+    "target_schema": "...",
+    "target_column": "...",
+    "target_datatype": "...",
+    "load_type": "INSERT|UPDATE|UPSERT|DELETE",
+    "update_override_sql": null,
+    "target_pk_flag": false,
+    "truncate_before_load": false,
+    "reject_handling": "...",
+    "constraint_violations": "...",
+    "lineage_confidence": "HIGH|MEDIUM|LOW",
+    "ambiguity_notes": null,
+    "migration_complexity": "SIMPLE|MODERATE|COMPLEX",
+    "target_platform_hint": "..."
+  }
+]
+
+════════════════════════════════════════════
+MIGRATION COMPLEXITY CLASSIFICATION
+════════════════════════════════════════════
+
+Assign a complexity rating to each field mapping:
+- SIMPLE: direct pass-through or trivial type cast, no business logic.
+- MODERATE: single expression, one lookup, or standard aggregation.
+- COMPLEX: nested expressions, multi-step derivation chains, conditional lookups, stored procedure calls, or functions with no direct Snowflake (stored procedures + tasks) equivalent requiring custom rewrite.
+
+For COMPLEX mappings, include a target_platform_hint explaining the recommended Snowflake (stored procedures + tasks) rewrite strategy.
+
+════════════════════════════════════════════
+IMPORTANT CONSTRAINTS
+════════════════════════════════════════════
+
+- Do NOT paraphrase or summarise expressions — reproduce them verbatim.
+- Do NOT skip any field, even if it appears trivial.
+- Do NOT invent values; use null for anything that cannot be determined from the mapping.
+- Process ALL mappings in the document, not just the first one.
+- If multiple sessions or workflows reference this mapping, note session-level overrides (e.g., partition key, connection override).
+
+Begin extraction now.

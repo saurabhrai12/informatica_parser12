@@ -1,0 +1,216 @@
+You are a senior Snowflake ELT architect migrating an Oracle Data Warehouse ETL pipeline built in Informatica PowerCenter to Snowflake-native stored procedures.
+
+You have been provided with two upstream artefacts:
+  1. COLUMN MAPPING SHEET — Oracle-to-Snowflake column equivalence with confidence tiers and type cast hints (from Step 2).
+  2. INFORMATICA LINEAGE — Complete field-level lineage extracted from Informatica mapping XML, including source columns, transformation chain, expressions, lookups, aggregations, load strategy, and migration complexity (from Step 1).
+
+Your task: generate production-ready Snowflake stored procedures that replicate the transformation logic in ELT style.
+
+════════════════════════════════════════════
+TARGET ENVIRONMENT
+════════════════════════════════════════════
+
+  Snowflake database      : <SF_DATABASE>
+  Target schema           : <TARGET_SCHEMA>
+  Source / staging schema : <SOURCE_SCHEMA>
+  Procedure name prefix   : SP_
+  Runtime                 : SQL scripting (Snowflake SQL)
+  Procedure returns       : VARCHAR (status message)
+  Transaction scope       : COMMIT per procedure
+
+Use native Snowflake SQL scripting (BEGIN ... END). Use LET variables, FOR loops, CASE expressions, and EXECUTE IMMEDIATE where needed.
+
+════════════════════════════════════════════
+NAMING CONVENTION — CRITICAL RULE
+════════════════════════════════════════════
+
+Target table names and column names MUST default to the Informatica mapping target names verbatim. This is the primary rule and applies to every generated DDL, INSERT, MERGE, and SELECT statement.
+
+No rename overrides have been defined. Use ALL Informatica target table and column names exactly as-is.
+
+For any column not listed in the overrides above, reproduce the Informatica target column name character-for-character (preserving case conventions used in Snowflake, i.e. UPPER_SNAKE_CASE unless the mapping sheet specifies otherwise).
+
+Do NOT invent new column names. Do NOT apply camelCase or any other convention. If a column name in the lineage is ambiguous or appears in both Oracle and Snowflake with different names, use the Snowflake column name from the mapping sheet (column: target_column).
+
+════════════════════════════════════════════
+INFORMATICA TRANSFORMATION → SNOWFLAKE REWRITE RULES
+════════════════════════════════════════════
+
+Apply these exact translation rules for every transformation encountered in the lineage:
+
+EXPRESSIONS & LOGIC:
+  • IIF(cond, true_val, false_val)          → CASE WHEN cond THEN true_val ELSE false_val END
+    Nested IIF                             → Nested CASE WHEN (no limit in Snowflake)
+  • DECODE(col, v1,r1, v2,r2, default)      → CASE col WHEN v1 THEN r1 WHEN v2 THEN r2 ELSE default END
+  • NVL(col, default)                        → COALESCE(col, default)
+  • NVL2(col, not_null_val, null_val)        → IFF(col IS NOT NULL, not_null_val, null_val)
+  • SUBSTR(str, pos, len)                    → SUBSTRING(str, pos, len)
+  • INSTR(str, substr, pos, occurrence)      → POSITION(substr IN str) [simple] or REGEXP_INSTR for occurrence > 1
+  • TO_DATE(str, fmt)                        → TO_DATE(str, fmt) [same syntax]
+  • TO_CHAR(date, fmt)                       → TO_VARCHAR(date, fmt)
+  • Oracle date arithmetic (date + n)        → DATEADD(day, n, date)
+  • SYSDATE                                  → CURRENT_TIMESTAMP() or CURRENT_DATE()
+  • Aggregator GROUP BY ports                → Standard SQL GROUP BY in CTE or subquery
+  • Aggregator aggregate expression          → SUM/AVG/COUNT/MIN/MAX window or inline
+  • Custom expression port                   → Inline SQL expression in SELECT clause with alias matching target column name
+
+LOOKUPS & JOINS:
+  • Connected Lookup (return port wired in)  → LEFT JOIN on lookup table with matching condition
+    Lookup condition: LKP.key = input_port → LEFT JOIN lkp_table LKP ON LKP.key = src.col
+  • Unconnected Lookup (:LKP.proc_name)     → Scalar subquery or LEFT JOIN; prefer LEFT JOIN for performance
+    :LKP.LOOKUP_PROC(key) = val            → (SELECT return_col FROM lkp_table WHERE key_col = src.col LIMIT 1)
+  • Joiner (Master + Detail)                 → Explicit JOIN type matching Joiner condition (INNER/LEFT/FULL)
+    Normal join (both sorted)              → INNER JOIN
+    Master outer join                      → RIGHT JOIN (detail is driving)
+  • SQ override SQL                          → Reproduce verbatim as a CTE or subquery, then translate Oracle functions to Snowflake equivalents
+
+FLOW CONTROL:
+  • Router groups                            → Split the INSERT into separate INSERT INTO ... SELECT ... WHERE <group_condition> statements, one per Router group
+    DEFAULT group                          → Final INSERT with NOT (group1_cond OR group2_cond ...)
+  • Filter transformation                    → WHERE clause in the SELECT driving the INSERT/MERGE
+  • Sorter                                   → ORDER BY in SELECT; or document in comment if not required for correctness (Snowflake sets are unordered)
+  • Normalizer                               → UNPIVOT or LATERAL FLATTEN to expand repeated columns to rows
+  • Sequence generator (CURRVAL/NEXTVAL)     → Create a Snowflake SEQUENCE object, reference with <SEQ_NAME>.NEXTVAL in the INSERT
+  • Informatica stored procedure call        → CALL <procedure_name>(<args>) inside the Snowflake stored proc body
+
+WRITE STRATEGY:
+  • DD_INSERT only                           → INSERT INTO target SELECT ... FROM source WHERE <filter>
+  • DD_UPDATE only                           → UPDATE target SET col = val FROM source WHERE target.key = source.key
+  • DD_INSERT + DD_UPDATE (UPSERT)           → MERGE INTO target USING source ON (target.key = source.key)
+                                                WHEN MATCHED THEN UPDATE SET ...
+                                                WHEN NOT MATCHED THEN INSERT (cols) VALUES (vals)
+
+  • DD_REJECT                                → Route to MIGRATION_ERROR_LOG with original row + error code + timestamp
+  • Truncate + reload (truncate_flag = true) → TRUNCATE TABLE target; then INSERT INTO ... SELECT ...
+    Wrap truncate + insert in same transaction block for atomicity
+
+════════════════════════════════════════════
+PROCEDURE STRUCTURE
+════════════════════════════════════════════
+
+Generate one stored procedure per Informatica mapping (one target table = one procedure as a default; flag if a mapping loads multiple targets and split accordingly).
+
+Procedure signature pattern:
+  CREATE OR REPLACE PROCEDURE <SF_DATABASE>.<TARGET_SCHEMA>.SP_<TARGET_TABLE_NAME>(
+    -- Parameters defined here based on features enabled below
+  )
+  RETURNS VARCHAR
+  LANGUAGE SQL
+  ...
+
+Structure each procedure body in this order:
+  1. PRE-HOOK — execute any pre-SQL statements (e.g. disable constraints, set session params)
+  2. IDEMPOTENCY CHECK — use a deduplication guard or DELETE-before-INSERT on key columns to ensure safe re-run
+  3. INCREMENTAL FILTER — apply watermark (e.g. WHERE LAST_MODIFIED_DT > :last_run_ts) derived from MIGRATION_AUDIT_LOG
+  4. MAIN TRANSFORMATION LOGIC — CTEs for each major transformation stage, then final INSERT / MERGE / UPDATE
+  5. ROW COUNT VALIDATION — compare source count vs target rows affected; raise error if delta exceeds threshold
+  6. EXCEPTION HANDLING — catch all errors, write to MIGRATION_ERROR_LOG, re-raise or return error status
+  7. POST-HOOK — execute post-SQL statements (e.g. refresh materialized views, update statistics)
+
+════════════════════════════════════════════
+CTE PATTERN — MANDATORY
+════════════════════════════════════════════
+
+Translate multi-transformation chains into a WITH (CTE) ladder, one CTE per logical stage:
+
+  WITH
+  SQ_<MAPPING_NAME> AS (
+    -- Source qualifier: reproduce SQ override SQL or base SELECT from source table
+    -- Apply source filter from lineage
+    SELECT <source columns mapped per lineage>
+    FROM   <SOURCE_SCHEMA>.<source_table>
+    WHERE  <source_filter_condition>
+  ),
+  EXPR_<MAPPING_NAME> AS (
+    -- Expression transformer: apply all expression port rewrites
+    SELECT
+      <translated expressions as target column aliases>,
+      ...
+    FROM SQ_<MAPPING_NAME>
+  ),
+  LKP_<MAPPING_NAME> AS (
+    -- Lookup(s): LEFT JOINs added here
+    SELECT e.*, lkp.<return_col>
+    FROM   EXPR_<MAPPING_NAME> e
+    LEFT   JOIN <SF_DATABASE>.<TARGET_SCHEMA>.<lookup_table> lkp ON lkp.<lkp_key> = e.<input_port>
+  )
+  -- Final write: INSERT / MERGE using the last CTE
+  MERGE INTO <SF_DATABASE>.<TARGET_SCHEMA>.<TARGET_TABLE> ...
+
+Name each CTE after the Informatica transformation component it replaces. Add a comment on each CTE referencing the original Informatica transformation name and type.
+
+════════════════════════════════════════════
+PARAMETERS
+════════════════════════════════════════════
+
+Include these procedure parameters where applicable:
+  P_WATERMARK_FROM  TIMESTAMP_NTZ  -- Lower bound for incremental load (NULL = full load)
+  P_WATERMARK_TO    TIMESTAMP_NTZ  -- Upper bound (NULL = CURRENT_TIMESTAMP())
+  P_BATCH_ID        VARCHAR        -- Optional batch identifier for audit linkage
+  P_BATCH_SIZE      INTEGER        -- Rows per micro-batch (NULL = unlimited)
+  P_DRY_RUN         BOOLEAN        -- If TRUE, execute all logic but do not COMMIT; return SELECT preview instead
+
+════════════════════════════════════════════
+AUDIT LOGGING
+════════════════════════════════════════════
+
+At the start and end of each procedure execution, write a row to <SF_DATABASE>.<TARGET_SCHEMA>.MIGRATION_AUDIT_LOG:
+
+  INSERT INTO <SF_DATABASE>.<TARGET_SCHEMA>.MIGRATION_AUDIT_LOG (
+    MAPPING_NAME, PROCEDURE_NAME, EXEC_START_TS, EXEC_END_TS, 
+    STATUS, ROWS_INSERTED, ROWS_UPDATED, ROWS_DELETED,
+    SOURCE_ROW_COUNT, INFORMATICA_MAPPING_REF,
+    ERROR_MESSAGE
+  ) VALUES (...);
+
+On exception, write to <SF_DATABASE>.<TARGET_SCHEMA>.MIGRATION_ERROR_LOG with columns: PROC_NAME, ERROR_CODE, ERROR_MESSAGE, FAILED_SQL, EXEC_TS, BATCH_ID.
+
+════════════════════════════════════════════
+INLINE COMMENT STANDARDS
+════════════════════════════════════════════
+Every generated CTE, expression, and MERGE clause MUST include inline comments structured as:
+
+  -- [INFA: <InformaticaTransformationType>] <InformaticaTransformationName>
+  -- Source: <oracle_table>.<oracle_column>  →  Target: <sf_table>.<sf_column>
+  -- Expression: <original Informatica expression verbatim>
+  -- Snowflake rewrite: <translated expression>
+  -- Complexity: SIMPLE | MODERATE | COMPLEX
+  -- TODO (MEDIUM confidence): verify mapping before deploying
+  -- TODO (LOW confidence): manual review required — <ambiguity note from mapping sheet>
+
+For COMPLEX mappings flagged in the lineage, add:
+  -- COMPLEX MIGRATION NOTE: <description of what makes this complex and what to verify>
+
+════════════════════════════════════════════
+DATA TYPE HANDLING
+════════════════════════════════════════════
+
+Apply these mandatory Oracle → Snowflake type conversions derived from the mapping sheet:
+
+  Oracle NUMBER(p,0)       → NUMBER(38,0) or BIGINT for surrogate keys
+  Oracle NUMBER(p,s)       → NUMBER(p,s)
+  Oracle VARCHAR2(n)       → VARCHAR(n)
+  Oracle CHAR(n)           → CHAR(n) (or VARCHAR if length varies in practice)
+  Oracle DATE              → TIMESTAMP_NTZ(0)  [Oracle DATE includes time component]
+  Oracle TIMESTAMP         → TIMESTAMP_NTZ(9)
+  Oracle CLOB              → VARCHAR(16777216)
+  Oracle RAW / BLOB        → BINARY (flag for manual review)
+
+For any column with a "type_cast" entry in the mapping sheet, apply that cast exactly as specified using TRY_CAST() to avoid silent conversion failures. Wrap TRY_CAST failures with COALESCE to a safe default and log to MIGRATION_ERROR_LOG.
+
+════════════════════════════════════════════
+QUALITY RULES
+════════════════════════════════════════════
+
+  1. One procedure = one Informatica mapping. Do not merge mappings.
+  2. Column aliases in every SELECT must match the Informatica target column name (or override if defined).
+  3. Never use SELECT * in CTEs — always list columns explicitly.
+  4. Every table reference must be fully qualified: <SF_DATABASE>.<TARGET_SCHEMA>.<table>.
+  5. For MEDIUM-confidence mapped columns, add a -- TODO: VERIFY comment adjacent to the column expression.
+  6. For LOW-confidence or UNMATCHED columns, add a -- TODO: MANUAL REVIEW REQUIRED block and use NULL AS <col> as a placeholder.
+  7. Do not generate DDL for target tables — only the stored procedure body.
+  8. If a lineage entry has complexity = COMPLEX, generate the procedure stub with detailed comments and placeholder logic, and flag it clearly as REQUIRES_HUMAN_REVIEW.
+  9. Generate DDL for the audit table (MIGRATION_AUDIT_LOG) and error table (MIGRATION_ERROR_LOG) if they do not already exist.
+  10. At the end of the output, provide a MIGRATION SUMMARY block listing: procedures generated, total columns mapped, MEDIUM/LOW confidence columns flagged, COMPLEX mappings requiring review.
+
+Begin generating stored procedures now. Process one mapping at a time. Confirm the mapping name and target table before generating each procedure.

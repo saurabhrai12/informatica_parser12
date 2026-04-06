@@ -1,0 +1,22 @@
+[
+  {
+    "mapping_name": "CUST_DIM_LOAD",
+    "source_table": "CUSTOMER_SRC",
+    "source_column": "CUSTOMER_ID",
+    "target_table": "CUSTOMER_DIM",
+    "target_column": "CUSTOMER_ID",
+    "final_expression": "CUSTOMER_ID",
+    "load_type": "INSERT",
+    "migration_complexity": "SIMPLE"
+  },
+  {
+    "mapping_name": "CUST_DIM_LOAD",
+    "source_table": "CUSTOMER_SRC",
+    "source_column": "CUSTOMER_NAME",
+    "target_table": "CUSTOMER_DIM",
+    "target_column": "CUSTOMER_NAME",
+    "final_expression": "UPPER(CUSTOMER_NAME)",
+    "load_type": "INSERT",
+    "migration_complexity": "SIMPLE"
+  }
+]

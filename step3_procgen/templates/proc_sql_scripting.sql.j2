@@ -1,0 +1,56 @@
+{# Snowflake SQL-scripting stored procedure template (per proc_generater.txt) #}
+CREATE OR REPLACE PROCEDURE {{ db }}.{{ target_schema }}.SP_{{ target_table }}(
+    P_WATERMARK_FROM TIMESTAMP_NTZ DEFAULT NULL,
+    P_WATERMARK_TO   TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    P_BATCH_ID       VARCHAR       DEFAULT NULL,
+    P_BATCH_SIZE     INTEGER       DEFAULT NULL,
+    P_DRY_RUN        BOOLEAN       DEFAULT FALSE
+)
+RETURNS VARCHAR
+LANGUAGE SQL
+AS
+$$
+DECLARE
+    v_status        VARCHAR DEFAULT 'RUNNING';
+    v_rows_inserted INTEGER DEFAULT 0;
+    v_rows_updated  INTEGER DEFAULT 0;
+    v_err_msg       VARCHAR;
+    v_failed_sql    VARCHAR;
+    v_start_ts      TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP();
+BEGIN
+    -- ── PRE-HOOK ────────────────────────────────────────────────────
+    -- (no pre-SQL declared in lineage)
+
+    -- ── MAIN TRANSFORMATION ────────────────────────────────────────
+    -- [INFA: Mapping] {{ mapping_name }}
+    BEGIN
+        LET stmt VARCHAR := $${{ main_sql }}$$;
+        IF (NOT P_DRY_RUN) THEN
+            EXECUTE IMMEDIATE :stmt;
+            v_rows_inserted := SQLROWCOUNT;
+        END IF;
+        v_status := 'SUCCESS';
+    EXCEPTION
+        WHEN OTHER THEN
+            v_status    := 'FAILED';
+            v_err_msg   := SQLERRM;
+            v_failed_sql := stmt;
+            INSERT INTO {{ db }}.{{ target_schema }}.MIGRATION_ERROR_LOG
+                (PROC_NAME, ERROR_CODE, ERROR_MESSAGE, FAILED_SQL, EXEC_TS, BATCH_ID)
+                VALUES ('SP_{{ target_table }}', SQLCODE, :v_err_msg, :v_failed_sql,
+                        CURRENT_TIMESTAMP(), :P_BATCH_ID);
+    END;
+
+    -- ── AUDIT LOG ──────────────────────────────────────────────────
+    INSERT INTO {{ db }}.{{ target_schema }}.MIGRATION_AUDIT_LOG
+        (MAPPING_NAME, PROCEDURE_NAME, EXEC_START_TS, EXEC_END_TS, STATUS,
+         ROWS_INSERTED, ROWS_UPDATED, ROWS_DELETED, INFORMATICA_MAPPING_REF,
+         ERROR_MESSAGE, BATCH_ID)
+        VALUES ('{{ mapping_name }}', 'SP_{{ target_table }}',
+                :v_start_ts, CURRENT_TIMESTAMP(), :v_status,
+                :v_rows_inserted, :v_rows_updated, 0,
+                '{{ mapping_name }}', :v_err_msg, :P_BATCH_ID);
+
+    RETURN v_status;
+END;
+$$;
