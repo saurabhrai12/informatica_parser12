@@ -23,6 +23,22 @@ EVAL_CMDS = {
     "lineage": [sys.executable, "-m", "step1_lineage.eval"],
     "mapping": [sys.executable, "-m", "step2_mapping.eval"],
     "procgen": [sys.executable, "-m", "step3_procgen.eval"],
+    # "skills" runs all three evals in sequence and sums them — the skills
+    # loop is not allowed to regress any individual step (see program_skills.md).
+    "skills":  [sys.executable, "-c",
+                "from step1_lineage.eval import score as s1; "
+                "from step2_mapping.eval import score as s2; "
+                "from step3_procgen.eval import score as s3; "
+                "print(f'{s1()+s2()+s3():.6f}')"],
+}
+
+# Each step has a related skill file loaded before the agent proposes a change.
+STEP_SKILLS = {
+    "lineage": ["informatica_xml"],
+    "mapping": ["column_matching", "oracle_to_snowflake_types"],
+    "procgen": ["snowflake_sql_scripting", "oracle_to_snowflake_types"],
+    "skills":  ["informatica_xml", "column_matching",
+                "oracle_to_snowflake_types", "snowflake_sql_scripting"],
 }
 
 
@@ -46,6 +62,12 @@ def main() -> None:
     p.add_argument("--step", required=True, choices=EVAL_CMDS.keys())
     p.add_argument("--max-experiments", type=int, default=50)
     args = p.parse_args()
+
+    # Preload the skills for this step so the proposer has the knowledge.
+    from skills.loader import load_skill
+    print(f"loaded skills: {STEP_SKILLS[args.step]}")
+    for s in STEP_SKILLS[args.step]:
+        print(f"  - {s} ({len(load_skill(s))} bytes)")
 
     baseline = run_eval(args.step)
     print(f"baseline {args.step} score: {baseline:.6f}")

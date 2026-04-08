@@ -582,13 +582,30 @@ but you will never run 50 iterations manually.
 
 ### Skills — what they ARE used for
 
-Claude Code **Skills** (`SKILL.md` files) encode domain knowledge that the agent loads
-before starting work on a specific component. They are the right mechanism for:
+Project-level **Skills** (`SKILL.md` files under `skills/`) encode domain knowledge
+that the agent loads before starting work on a specific component. They are the
+right mechanism for:
 
-- **Static knowledge** that doesn't change between runs (Informatica XML schema, Snowflake
-  Snowpark API patterns, Oracle data type quirks).
-- **Operational procedures** — how to run tests, how to deploy, how to interpret eval output.
+- **Static knowledge** that doesn't change between runs (Informatica XML schema,
+  Snowflake SQL-scripting patterns, Oracle data type quirks).
+- **Operational procedures** — how to run tests, how to deploy, how to interpret
+  eval output.
 - **Not** for iterative optimisation — that is the autoresearch loop's job.
+
+The four skills in this project are:
+
+| Skill | Loaded before editing |
+|---|---|
+| `skills/informatica_xml/SKILL.md` | `step1_lineage/extractor.py`, `function_map.py` |
+| `skills/column_matching/SKILL.md` | `step2_mapping/matcher.py`, `synonym_dict.py` |
+| `skills/oracle_to_snowflake_types/SKILL.md` | both `step2_mapping` and `step3_procgen` |
+| `skills/snowflake_sql_scripting/SKILL.md` | `step3_procgen/generator.py`, `templates/` |
+
+Each SKILL.md has a frozen canonical section plus an **append-only "Learned
+patterns"** section at the bottom. Autoresearch may append new patterns via
+`skills.loader.append_learned_pattern(...)` but must NEVER rewrite canonical
+sections. The `autoresearch/program_skills.md` agenda governs this loop — it
+runs all three evals and only keeps changes that do not regress any step.
 
 ### The three autoresearch program files
 
