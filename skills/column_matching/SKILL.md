@@ -6,7 +6,7 @@ agent_modifiable: true
 improved_by: autoresearch (program_mapping.md)
 ---
 
-# Column matching methodology — 14 strategies
+# Column matching methodology — 15 strategies
 
 Authoritative source: `mapping_identification.txt`. Step 2 eval is the final
 arbiter; this skill encodes the reasoning shortcuts.
@@ -27,6 +27,12 @@ arbiter; this skill encodes the reasoning shortcuts.
 12. **Length / precision alignment** — tiebreaker only
 13. **Primary/foreign key relationship** — PK↔PK bonus +0.05
 14. **Nullability consistency** — tiebreaker only
+15. **Cortex Complete LLM** (opt-in) — ask Snowflake's `SNOWFLAKE.CORTEX.COMPLETE()`
+    to rank candidates for any column that scored below HIGH on strategies 1–14.
+    **Solo cap: 0.82** (no rule-based corroboration). When the LLM pick matches the
+    rule-based pick, a +0.05 corroboration bonus is applied and the cap is lifted.
+    Enable via `use_cortex_llm=True` in `match_columns()` or `CORTEX_ENABLED=1` env-var.
+    Requires a live Snowflake session (Snowpark or connector); no-ops silently in unit tests.
 
 ## Scoring formula
 
@@ -38,6 +44,15 @@ score       = name_score
             + (+0.05 if comment keyword overlap)
             + (+0.05 if both PK or both FK)
 score       = min(1.0, max(0.0, score))
+
+# Strategy 15 override (only when use_cortex_llm=True):
+if score < 0.90:
+    cortex_score = CORTEX.COMPLETE(oracle_col, top_n_sf_candidates)
+    if rule_based and cortex agree on same column:
+        score = min(1.0, max(score, cortex_score) + 0.05)   # corroboration lift
+    elif cortex_score > score:
+        score = min(0.82, cortex_score)                      # solo cap
+
 tier        = HIGH ≥0.90 | MEDIUM ≥0.65 | LOW ≥0.40 | UNMATCHED <0.40
 ```
 
@@ -88,6 +103,33 @@ Temporal: `CRT`/`CREATE`→CREATED, `UPD`/`MOD`→UPDATED, `INS`→INSERT, `LOAD
 `EFF`→EFFECTIVE, `EXP`→EXPIRY.
 
 Flags: `FLG`/`IND`→FLAG/INDICATOR, `IS_*` convention on Snowflake side.
+
+## Cortex Complete — implementation notes
+
+```python
+# Call signature (in matcher.py):
+match_columns(oracle_cols, sf_cols, use_cortex_llm=True, cortex_session=session)
+
+# The prompt sent to the model:
+# "Which of the following Snowflake columns best matches Oracle column CNTRY_CD
+#  (type VARCHAR2, table CUSTOMER_DIM, description 'ISO country code')?
+#  Candidates: COUNTRY_CODE (VARCHAR), COUNTRY_CD (CHAR), ...
+#  Respond ONLY with JSON: {"best_match": "COUNTRY_CODE", "confidence": 0.90, "reason": "..."}"
+
+# The function SNOWFLAKE.CORTEX.COMPLETE is invoked via:
+# SELECT SNOWFLAKE.CORTEX.COMPLETE('mistral-7b', '<escaped prompt>') AS response
+```
+
+**Model selection guide:**
+
+| Model | Latency | Cost | Best for |
+|---|---|---|---|
+| `mistral-7b` | ~1-2s | Lowest | Default — fast abbreviation lookups |
+| `llama3-8b` | ~1-2s | Low | Alternative default, similar quality |
+| `mixtral-8x7b` | ~3-5s | Medium | Better on complex domain reasoning |
+| `llama3-70b` | ~5-10s | Higher | Difficult AML/financial-crime terms |
+
+**Privilege required:** `GRANT SNOWFLAKE.CORTEX_USER TO ROLE <your_role>;`
 
 ## Learned synonym pairs (append-only)
 
